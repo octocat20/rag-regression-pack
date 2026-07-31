@@ -1,13 +1,16 @@
 # rag-regression-pack
 
-A practical regression pack for retrieval and RAG evaluation.
+Tiny RAG regression pack: a small QA dataset and a precision@k baseline script.
 
-## What this repo is for
+## Quick start
 
-- Track retrieval quality changes over time
-- Validate citation support behavior
-- Catch latency regressions before release
+```bash
+python scripts/run_baseline.py
+cat reports/baseline.json
+```
 
-## Scope
+## Layout
 
-This initial version starts with a simple baseline workflow and leaves room to add datasets, metrics, and CI checks.
+- `datasets/tiny-qa.jsonl` — five labeled query rows
+- `scripts/run_baseline.py` — naive precision@k baseline
+- `reports/` — output from the baseline run

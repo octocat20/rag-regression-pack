@@ -1,0 +1,5 @@
+{"query_id": "q1", "query": "What is retrieval augmented generation?", "relevant_doc_ids": ["d1", "d3"]}
+{"query_id": "q2", "query": "How do you evaluate RAG systems?", "relevant_doc_ids": ["d2"]}
+{"query_id": "q3", "query": "What is precision at k?", "relevant_doc_ids": ["d2", "d4"]}
+{"query_id": "q4", "query": "Why use a tiny regression dataset?", "relevant_doc_ids": ["d5"]}
+{"query_id": "q5", "query": "What causes hallucination in RAG?", "relevant_doc_ids": ["d1", "d5"]}
