@@ -11,6 +11,10 @@ cat reports/baseline.json
 cat reports/citations.json
 ```
 
+## CI
+
+GitHub Actions runs both scripts on every push and pull request.
+
 ## Layout
 
 - `datasets/tiny-qa.jsonl` — labeled queries with relevant docs and expected citations
