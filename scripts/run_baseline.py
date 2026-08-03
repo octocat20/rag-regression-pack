@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Precision@k baseline over datasets/tiny-qa.jsonl."""
+"""Precision@k and recall@k baseline over datasets/tiny-qa.jsonl."""
 from __future__ import annotations
 
 import json
@@ -16,6 +16,7 @@ RETRIEVED = {
     "q3": ["d4", "d2", "d6"],
     "q4": ["d5", "d1", "d2"],
     "q5": ["d3", "d1", "d5"],
+    "q6": ["d6", "d1", "d2"],
 }
 
 
@@ -27,26 +28,38 @@ def precision_at_k(relevant, retrieved, k):
     return hits / len(top)
 
 
+def recall_at_k(relevant, retrieved, k):
+    relevant_set = set(relevant)
+    if not relevant_set:
+        return 1.0
+    top = retrieved[:k]
+    hits = sum(1 for doc_id in top if doc_id in relevant_set)
+    return hits / len(relevant_set)
+
+
 def main():
     rows = []
     with DATASET.open() as f:
         for line in f:
             line = line.strip()
-            if not line:
-                continue
-            rows.append(json.loads(line))
+            if line:
+                rows.append(json.loads(line))
 
     per_query = []
-    scores = []
+    precisions = []
+    recalls = []
     for row in rows:
         qid = row["query_id"]
         relevant = row["relevant_doc_ids"]
         retrieved = RETRIEVED.get(qid, [])
         p = precision_at_k(relevant, retrieved, K)
-        scores.append(p)
+        r = recall_at_k(relevant, retrieved, K)
+        precisions.append(p)
+        recalls.append(r)
         per_query.append({
             "query_id": qid,
             "precision_at_k": p,
+            "recall_at_k": r,
             "k": K,
             "relevant_doc_ids": relevant,
             "retrieved_doc_ids": retrieved[:K],
@@ -54,8 +67,9 @@ def main():
 
     report = {
         "k": K,
-        "n_queries": len(scores),
-        "mean_precision_at_k": sum(scores) / len(scores) if scores else 0.0,
+        "n_queries": len(precisions),
+        "mean_precision_at_k": sum(precisions) / len(precisions) if precisions else 0.0,
+        "mean_recall_at_k": sum(recalls) / len(recalls) if recalls else 0.0,
         "per_query": per_query,
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
