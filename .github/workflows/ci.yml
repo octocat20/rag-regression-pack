@@ -12,7 +12,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Run precision/recall baseline
+      - name: Run precision/recall/MRR baseline
         run: python scripts/run_baseline.py
       - name: Run citation support check
         run: python scripts/check_citations.py

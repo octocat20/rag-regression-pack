@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Precision@k and recall@k baseline over datasets/tiny-qa.jsonl."""
+"""Precision@k, recall@k, and MRR baseline over datasets/tiny-qa.jsonl."""
 from __future__ import annotations
 
 import json
@@ -37,6 +37,14 @@ def recall_at_k(relevant, retrieved, k):
     return hits / len(relevant_set)
 
 
+def reciprocal_rank(relevant, retrieved):
+    relevant_set = set(relevant)
+    for i, doc_id in enumerate(retrieved, start=1):
+        if doc_id in relevant_set:
+            return 1.0 / i
+    return 0.0
+
+
 def main():
     rows = []
     with DATASET.open() as f:
@@ -48,18 +56,22 @@ def main():
     per_query = []
     precisions = []
     recalls = []
+    rrs = []
     for row in rows:
         qid = row["query_id"]
         relevant = row["relevant_doc_ids"]
         retrieved = RETRIEVED.get(qid, [])
         p = precision_at_k(relevant, retrieved, K)
         r = recall_at_k(relevant, retrieved, K)
+        rr = reciprocal_rank(relevant, retrieved)
         precisions.append(p)
         recalls.append(r)
+        rrs.append(rr)
         per_query.append({
             "query_id": qid,
             "precision_at_k": p,
             "recall_at_k": r,
+            "reciprocal_rank": rr,
             "k": K,
             "relevant_doc_ids": relevant,
             "retrieved_doc_ids": retrieved[:K],
@@ -70,6 +82,7 @@ def main():
         "n_queries": len(precisions),
         "mean_precision_at_k": sum(precisions) / len(precisions) if precisions else 0.0,
         "mean_recall_at_k": sum(recalls) / len(recalls) if recalls else 0.0,
+        "mrr": sum(rrs) / len(rrs) if rrs else 0.0,
         "per_query": per_query,
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
