@@ -3,9 +3,14 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from scripts.metrics import precision_at_k, recall_at_k, reciprocal_rank
 DATASET = ROOT / "datasets" / "tiny-qa.jsonl"
 OUT = ROOT / "reports" / "baseline.json"
 K = 3
@@ -18,31 +23,6 @@ RETRIEVED = {
     "q5": ["d3", "d1", "d5"],
     "q6": ["d6", "d1", "d2"],
 }
-
-
-def precision_at_k(relevant, retrieved, k):
-    top = retrieved[:k]
-    if not top:
-        return 0.0
-    hits = sum(1 for doc_id in top if doc_id in set(relevant))
-    return hits / len(top)
-
-
-def recall_at_k(relevant, retrieved, k):
-    relevant_set = set(relevant)
-    if not relevant_set:
-        return 1.0
-    top = retrieved[:k]
-    hits = sum(1 for doc_id in top if doc_id in relevant_set)
-    return hits / len(relevant_set)
-
-
-def reciprocal_rank(relevant, retrieved):
-    relevant_set = set(relevant)
-    for i, doc_id in enumerate(retrieved, start=1):
-        if doc_id in relevant_set:
-            return 1.0 / i
-    return 0.0
 
 
 def main():
