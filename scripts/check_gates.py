@@ -15,6 +15,7 @@ GATES = {
     "mean_precision_at_k": 0.30,
     "mean_recall_at_k": 0.40,
     "mrr": 0.50,
+    "mean_ndcg_at_k": 0.80,
     "mean_citation_precision": 0.70,
     "mean_citation_recall": 0.70,
 }
@@ -31,6 +32,7 @@ def main() -> int:
         "mean_precision_at_k": baseline["mean_precision_at_k"],
         "mean_recall_at_k": baseline["mean_recall_at_k"],
         "mrr": baseline["mrr"],
+        "mean_ndcg_at_k": baseline["mean_ndcg_at_k"],
         "mean_citation_precision": citations["mean_citation_precision"],
         "mean_citation_recall": citations["mean_citation_recall"],
     }

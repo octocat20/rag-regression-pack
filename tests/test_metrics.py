@@ -1,7 +1,7 @@
 """Unit tests for ranking metric helpers."""
 from __future__ import annotations
 
-from scripts.metrics import precision_at_k, recall_at_k, reciprocal_rank
+from scripts.metrics import ndcg_at_k, precision_at_k, recall_at_k, reciprocal_rank
 
 
 class TestPrecisionAtK:
@@ -44,3 +44,22 @@ class TestReciprocalRank:
 
     def test_first_relevant_wins(self):
         assert reciprocal_rank(["d1", "d2"], ["d2", "d1"]) == 1.0
+
+
+class TestNdcgAtK:
+    def test_perfect_ranking(self):
+        assert ndcg_at_k(["d1", "d2"], ["d1", "d2", "d3"], k=3) == 1.0
+
+    def test_worst_ranking(self):
+        assert ndcg_at_k(["d1"], ["d9", "d8", "d7"], k=3) == 0.0
+
+    def test_partial_ranking(self):
+        score = ndcg_at_k(["d1", "d2"], ["d9", "d1", "d2"], k=3)
+        assert 0.0 < score < 1.0
+
+    def test_no_relevant(self):
+        assert ndcg_at_k([], ["d1", "d2"], k=2) == 1.0
+
+    def test_k_limits_depth(self):
+        perfect_at_1 = ndcg_at_k(["d1", "d2"], ["d1", "d9", "d8"], k=1)
+        assert perfect_at_1 == 1.0

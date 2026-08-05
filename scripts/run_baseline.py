@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from scripts.metrics import precision_at_k, recall_at_k, reciprocal_rank
+from scripts.metrics import ndcg_at_k, precision_at_k, recall_at_k, reciprocal_rank
 DATASET = ROOT / "datasets" / "tiny-qa.jsonl"
 OUT = ROOT / "reports" / "baseline.json"
 K = 3
@@ -37,6 +37,7 @@ def main():
     precisions = []
     recalls = []
     rrs = []
+    ndcgs = []
     for row in rows:
         qid = row["query_id"]
         relevant = row["relevant_doc_ids"]
@@ -44,14 +45,17 @@ def main():
         p = precision_at_k(relevant, retrieved, K)
         r = recall_at_k(relevant, retrieved, K)
         rr = reciprocal_rank(relevant, retrieved)
+        ndcg = ndcg_at_k(relevant, retrieved, K)
         precisions.append(p)
         recalls.append(r)
         rrs.append(rr)
+        ndcgs.append(ndcg)
         per_query.append({
             "query_id": qid,
             "precision_at_k": p,
             "recall_at_k": r,
             "reciprocal_rank": rr,
+            "ndcg_at_k": ndcg,
             "k": K,
             "relevant_doc_ids": relevant,
             "retrieved_doc_ids": retrieved[:K],
@@ -63,6 +67,7 @@ def main():
         "mean_precision_at_k": sum(precisions) / len(precisions) if precisions else 0.0,
         "mean_recall_at_k": sum(recalls) / len(recalls) if recalls else 0.0,
         "mrr": sum(rrs) / len(rrs) if rrs else 0.0,
+        "mean_ndcg_at_k": sum(ndcgs) / len(ndcgs) if ndcgs else 0.0,
         "per_query": per_query,
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
