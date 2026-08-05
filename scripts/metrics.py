@@ -1,0 +1,56 @@
+"""Ranking metric helpers for RAG regression evaluation."""
+from __future__ import annotations
+
+import math
+
+
+def precision_at_k(relevant: list[str], retrieved: list[str], k: int) -> float:
+    """Fraction of top-k retrieved docs that are relevant."""
+    top = retrieved[:k]
+    if not top:
+        return 0.0
+    relevant_set = set(relevant)
+    hits = sum(1 for doc_id in top if doc_id in relevant_set)
+    return hits / len(top)
+
+
+def recall_at_k(relevant: list[str], retrieved: list[str], k: int) -> float:
+    """Fraction of relevant docs found in top-k."""
+    relevant_set = set(relevant)
+    if not relevant_set:
+        return 1.0
+    top = retrieved[:k]
+    hits = sum(1 for doc_id in top if doc_id in relevant_set)
+    return hits / len(relevant_set)
+
+
+def reciprocal_rank(relevant: list[str], retrieved: list[str]) -> float:
+    """Reciprocal rank of the first relevant doc in the ranked list."""
+    relevant_set = set(relevant)
+    for i, doc_id in enumerate(retrieved, start=1):
+        if doc_id in relevant_set:
+            return 1.0 / i
+    return 0.0
+
+
+def ndcg_at_k(relevant: list[str], retrieved: list[str], k: int) -> float:
+    """Normalized discounted cumulative gain at k with binary relevance."""
+    relevant_set = set(relevant)
+    if not relevant_set:
+        return 1.0
+
+    top = retrieved[:k]
+
+    def dcg(ranked: list[str]) -> float:
+        total = 0.0
+        for i, doc_id in enumerate(ranked, start=1):
+            if doc_id in relevant_set:
+                total += 1.0 / math.log2(i + 1)
+        return total
+
+    actual = dcg(top)
+    ideal_count = min(len(relevant_set), k)
+    ideal = sum(1.0 / math.log2(i + 1) for i in range(1, ideal_count + 1))
+    if ideal == 0:
+        return 0.0
+    return actual / ideal
