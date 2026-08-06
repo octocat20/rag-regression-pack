@@ -20,6 +20,16 @@ ANSWER_CITATIONS = {
 }
 
 
+def citation_support_rate(expected: list[str], cited: list[str]) -> float:
+    """Fraction of cited docs that are supported by expected citations."""
+    cited_set = set(cited)
+    if not cited_set:
+        return 1.0
+    expected_set = set(expected)
+    supported = expected_set & cited_set
+    return len(supported) / len(cited_set)
+
+
 def score_row(expected, cited):
     expected_set = set(expected)
     cited_set = set(cited)
@@ -28,7 +38,13 @@ def score_row(expected, cited):
     supported = expected_set & cited_set
     precision = len(supported) / len(cited_set) if cited_set else 0.0
     recall = len(supported) / len(expected_set)
-    return {"precision": precision, "recall": recall, "supported": sorted(supported), "unsupported": sorted(cited_set - expected_set)}
+    return {
+        "precision": precision,
+        "recall": recall,
+        "support_rate": citation_support_rate(expected, cited),
+        "supported": sorted(supported),
+        "unsupported": sorted(cited_set - expected_set),
+    }
 
 
 def main():
@@ -42,6 +58,8 @@ def main():
     per_query = []
     precisions = []
     recalls = []
+    total_citations = 0
+    supported_citations = 0
     for row in rows:
         qid = row["query_id"]
         expected = row.get("expected_citations", [])
@@ -49,6 +67,10 @@ def main():
         s = score_row(expected, cited)
         precisions.append(s["precision"])
         recalls.append(s["recall"])
+        cited_set = set(cited)
+        expected_set = set(expected)
+        total_citations += len(cited_set)
+        supported_citations += len(expected_set & cited_set)
         per_query.append({
             "query_id": qid,
             "expected_citations": expected,
@@ -56,10 +78,16 @@ def main():
             **s,
         })
 
+    citation_support_rate_agg = (
+        supported_citations / total_citations if total_citations else 1.0
+    )
     report = {
         "n_queries": len(rows),
         "mean_citation_precision": sum(precisions) / len(precisions) if precisions else 0.0,
         "mean_citation_recall": sum(recalls) / len(recalls) if recalls else 0.0,
+        "citation_support_rate": citation_support_rate_agg,
+        "total_citations": total_citations,
+        "supported_citations": supported_citations,
         "per_query": per_query,
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
