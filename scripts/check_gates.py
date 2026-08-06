@@ -18,6 +18,7 @@ GATES = {
     "mean_ndcg_at_k": 0.80,
     "mean_citation_precision": 0.70,
     "mean_citation_recall": 0.70,
+    "citation_support_rate": 0.80,
 }
 
 
@@ -35,6 +36,7 @@ def main() -> int:
         "mean_ndcg_at_k": baseline["mean_ndcg_at_k"],
         "mean_citation_precision": citations["mean_citation_precision"],
         "mean_citation_recall": citations["mean_citation_recall"],
+        "citation_support_rate": citations["citation_support_rate"],
     }
 
     failed = []
