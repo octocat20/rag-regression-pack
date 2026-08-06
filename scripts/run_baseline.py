@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import sys
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -25,6 +26,30 @@ RETRIEVED = {
 }
 
 
+def score_query(relevant: list[str], retrieved: list[str], k: int) -> dict[str, float]:
+    """Score one query and return ranking metrics."""
+    return {
+        "precision_at_k": precision_at_k(relevant, retrieved, k),
+        "recall_at_k": recall_at_k(relevant, retrieved, k),
+        "reciprocal_rank": reciprocal_rank(relevant, retrieved),
+        "ndcg_at_k": ndcg_at_k(relevant, retrieved, k),
+    }
+
+
+def latency_ms(start: float, end: float) -> float:
+    """Convert perf_counter delta to milliseconds."""
+    return (end - start) * 1000.0
+
+
+def p50(values: list[float]) -> float:
+    """Median of a non-empty list of latencies."""
+    ordered = sorted(values)
+    mid = len(ordered) // 2
+    if len(ordered) % 2:
+        return ordered[mid]
+    return (ordered[mid - 1] + ordered[mid]) / 2.0
+
+
 def main():
     rows = []
     with DATASET.open() as f:
@@ -38,14 +63,19 @@ def main():
     recalls = []
     rrs = []
     ndcgs = []
+    latencies_ms = []
     for row in rows:
         qid = row["query_id"]
         relevant = row["relevant_doc_ids"]
         retrieved = RETRIEVED.get(qid, [])
-        p = precision_at_k(relevant, retrieved, K)
-        r = recall_at_k(relevant, retrieved, K)
-        rr = reciprocal_rank(relevant, retrieved)
-        ndcg = ndcg_at_k(relevant, retrieved, K)
+        start = time.perf_counter()
+        scores = score_query(relevant, retrieved, K)
+        elapsed_ms = latency_ms(start, time.perf_counter())
+        latencies_ms.append(elapsed_ms)
+        p = scores["precision_at_k"]
+        r = scores["recall_at_k"]
+        rr = scores["reciprocal_rank"]
+        ndcg = scores["ndcg_at_k"]
         precisions.append(p)
         recalls.append(r)
         rrs.append(rr)
@@ -56,6 +86,7 @@ def main():
             "recall_at_k": r,
             "reciprocal_rank": rr,
             "ndcg_at_k": ndcg,
+            "retrieval_latency_ms": elapsed_ms,
             "k": K,
             "relevant_doc_ids": relevant,
             "retrieved_doc_ids": retrieved[:K],
@@ -68,6 +99,8 @@ def main():
         "mean_recall_at_k": sum(recalls) / len(recalls) if recalls else 0.0,
         "mrr": sum(rrs) / len(rrs) if rrs else 0.0,
         "mean_ndcg_at_k": sum(ndcgs) / len(ndcgs) if ndcgs else 0.0,
+        "mean_retrieval_latency_ms": sum(latencies_ms) / len(latencies_ms) if latencies_ms else 0.0,
+        "p50_retrieval_latency_ms": p50(latencies_ms) if latencies_ms else 0.0,
         "per_query": per_query,
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
