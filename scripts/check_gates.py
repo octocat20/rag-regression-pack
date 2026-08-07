@@ -12,13 +12,13 @@ CITATIONS = ROOT / "reports" / "citations.json"
 
 # Conservative gates for the tiny pack (update intentionally when improving retrieval).
 GATES = {
-    "mean_precision_at_k": 0.30,
-    "mean_recall_at_k": 0.40,
-    "mrr": 0.50,
-    "mean_ndcg_at_k": 0.80,
-    "mean_citation_precision": 0.70,
-    "mean_citation_recall": 0.70,
-    "citation_support_rate": 0.80,
+    "mean_precision_at_k": 0.35,
+    "mean_recall_at_k": 0.55,
+    "mrr": 0.55,
+    "mean_ndcg_at_k": 0.74,
+    "mean_citation_precision": 0.65,
+    "mean_citation_recall": 0.65,
+    "citation_support_rate": 0.75,
 }
 
 

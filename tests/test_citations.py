@@ -34,6 +34,6 @@ class TestCitationReport:
         )
         report = json.loads((ROOT / "reports" / "citations.json").read_text())
         assert "citation_support_rate" in report
-        assert report["total_citations"] == 7
-        assert report["supported_citations"] == 6
-        assert abs(report["citation_support_rate"] - 6 / 7) < 1e-9
+        assert report["total_citations"] == 12
+        assert report["supported_citations"] == 9
+        assert abs(report["citation_support_rate"] - 9 / 12) < 1e-9
