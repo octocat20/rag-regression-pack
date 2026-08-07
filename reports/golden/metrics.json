@@ -1,0 +1,26 @@
+{
+  "provenance": {
+    "dataset_path": "datasets/tiny-qa.jsonl",
+    "n_queries": 9,
+    "reviewed_at": "2026-08-07",
+    "notes": "Reviewed after adding q7-q9 hard-negative queries"
+  },
+  "metrics": {
+    "mean_precision_at_k": 0.4815,
+    "mean_recall_at_k": 0.9444,
+    "mrr": 0.6852,
+    "mean_ndcg_at_k": 0.7493,
+    "mean_citation_precision": 0.8333,
+    "mean_citation_recall": 0.8889,
+    "citation_support_rate": 0.75
+  },
+  "max_regression": {
+    "mean_precision_at_k": 0.05,
+    "mean_recall_at_k": 0.05,
+    "mrr": 0.05,
+    "mean_ndcg_at_k": 0.03,
+    "mean_citation_precision": 0.05,
+    "mean_citation_recall": 0.05,
+    "citation_support_rate": 0.03
+  }
+}

@@ -4,3 +4,6 @@
 {"query_id": "q4", "query": "Why use a tiny regression dataset?", "relevant_doc_ids": ["d5"], "expected_citations": ["d5"]}
 {"query_id": "q5", "query": "What causes hallucination in RAG?", "relevant_doc_ids": ["d1", "d5"], "expected_citations": ["d1", "d5"]}
 {"query_id": "q6", "query": "What is citation support in RAG answers?", "relevant_doc_ids": ["d6"], "expected_citations": ["d6"]}
+{"query_id": "q7", "query": "What is mean reciprocal rank in search?", "relevant_doc_ids": ["d2", "d4"], "expected_citations": ["d2"]}
+{"query_id": "q8", "query": "How does document chunking affect retrieval?", "relevant_doc_ids": ["d7"], "expected_citations": ["d7"]}
+{"query_id": "q9", "query": "What is answer groundedness in RAG?", "relevant_doc_ids": ["d5", "d6"], "expected_citations": ["d5", "d6"]}
