@@ -11,8 +11,11 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from scripts.bm25 import build_scorer
 from scripts.metrics import ndcg_at_k, precision_at_k, recall_at_k, reciprocal_rank
+
 DATASET = ROOT / "datasets" / "tiny-qa.jsonl"
+CORPUS = ROOT / "datasets" / "tiny-corpus.jsonl"
 OUT = ROOT / "reports" / "baseline.json"
 K = 3
 
@@ -27,6 +30,24 @@ RETRIEVED = {
     "q8": ["d1", "d3", "d7"],
     "q9": ["d9", "d6", "d5"],
 }
+
+_BM25_SCORER = None
+
+
+def get_bm25_scorer():
+    """Lazy-load the corpus BM25 scorer."""
+    global _BM25_SCORER
+    if _BM25_SCORER is None:
+        _BM25_SCORER = build_scorer(CORPUS)
+    return _BM25_SCORER
+
+
+def resolve_retrieved(query_id: str, query: str, k: int) -> list[str]:
+    """Use fixture rankings when present, otherwise rank with BM25."""
+    fixture = RETRIEVED.get(query_id)
+    if fixture is not None:
+        return fixture[:k]
+    return get_bm25_scorer().rank_doc_ids(query, top_k=k)
 
 
 def score_query(relevant: list[str], retrieved: list[str], k: int) -> dict[str, float]:
@@ -70,7 +91,7 @@ def main():
     for row in rows:
         qid = row["query_id"]
         relevant = row["relevant_doc_ids"]
-        retrieved = RETRIEVED.get(qid, [])
+        retrieved = resolve_retrieved(qid, row["query"], K)
         start = time.perf_counter()
         scores = score_query(relevant, retrieved, K)
         elapsed_ms = latency_ms(start, time.perf_counter())
