@@ -1,0 +1,9 @@
+{"doc_id": "d1", "text": "Retrieval augmented generation combines a retriever with a language model to ground answers in source documents."}
+{"doc_id": "d2", "text": "Evaluate RAG systems with precision at k, recall at k and mean reciprocal rank on labeled queries."}
+{"doc_id": "d3", "text": "Retrieval augmented generation pipelines fetch passages before the model generates a response."}
+{"doc_id": "d4", "text": "Precision at k measures the fraction of top k retrieved documents that are relevant."}
+{"doc_id": "d5", "text": "Tiny regression datasets catch retrieval drift quickly without expensive end to end runs."}
+{"doc_id": "d6", "text": "Citation support checks whether cited documents actually support the generated answer."}
+{"doc_id": "d7", "text": "Document chunking changes recall because smaller chunks increase index granularity."}
+{"doc_id": "d8", "text": "Vector search returns approximate nearest neighbors from embedding indexes."}
+{"doc_id": "d9", "text": "Unrelated benchmark trivia about unrelated topics that should not dominate rankings."}
