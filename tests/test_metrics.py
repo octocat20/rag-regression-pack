@@ -1,7 +1,7 @@
 """Unit tests for ranking metric helpers."""
 from __future__ import annotations
 
-from scripts.metrics import ndcg_at_k, precision_at_k, recall_at_k, reciprocal_rank
+from scripts.metrics import hit_rate_at_k, ndcg_at_k, precision_at_k, recall_at_k, reciprocal_rank
 
 
 class TestPrecisionAtK:
@@ -63,3 +63,21 @@ class TestNdcgAtK:
     def test_k_limits_depth(self):
         perfect_at_1 = ndcg_at_k(["d1", "d2"], ["d1", "d9", "d8"], k=1)
         assert perfect_at_1 == 1.0
+
+
+class TestHitRateAtK:
+    def test_hit_in_top_k(self):
+        assert hit_rate_at_k(["d1"], ["d9", "d1", "d2"], k=2) == 1.0
+
+    def test_miss_outside_k(self):
+        assert hit_rate_at_k(["d1"], ["d9", "d8", "d1"], k=2) == 0.0
+
+    def test_no_relevant(self):
+        assert hit_rate_at_k([], ["d1", "d2"], k=2) == 1.0
+
+    def test_none_found(self):
+        assert hit_rate_at_k(["d1"], ["d9", "d8"], k=2) == 0.0
+
+    def test_empty_retrieved(self):
+        assert hit_rate_at_k(["d1"], [], k=3) == 0.0
+
