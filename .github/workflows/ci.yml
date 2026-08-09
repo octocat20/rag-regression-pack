@@ -18,6 +18,8 @@ jobs:
         run: python scripts/check_citations.py
       - name: Enforce regression gates
         run: python scripts/check_gates.py
+      - name: Validate dataset references
+        run: python scripts/check_dataset.py
       - name: Install pytest
         run: pip install pytest
       - name: Run metric unit tests

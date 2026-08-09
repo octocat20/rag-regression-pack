@@ -54,3 +54,15 @@ def ndcg_at_k(relevant: list[str], retrieved: list[str], k: int) -> float:
     if ideal == 0:
         return 0.0
     return actual / ideal
+
+def hit_rate_at_k(relevant: list[str], retrieved: list[str], k: int) -> float:
+    """Return 1.0 if any relevant id appears in retrieved[:k], else 0.0.
+
+    Empty relevant sets score 1.0 to match recall_at_k style.
+    """
+    relevant_set = set(relevant)
+    if not relevant_set:
+        return 1.0
+    top = retrieved[:k]
+    return 1.0 if any(doc_id in relevant_set for doc_id in top) else 0.0
+
