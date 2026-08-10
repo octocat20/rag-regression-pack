@@ -66,3 +66,37 @@ def hit_rate_at_k(relevant: list[str], retrieved: list[str], k: int) -> float:
     top = retrieved[:k]
     return 1.0 if any(doc_id in relevant_set for doc_id in top) else 0.0
 
+
+
+def average_precision_at_k(relevant: list[str], retrieved: list[str], k: int) -> float:
+    """Average precision at k for binary relevance.
+
+    Empty relevant sets score 1.0 to match recall_at_k style.
+    """
+    relevant_set = set(relevant)
+    if not relevant_set:
+        return 1.0
+    top = retrieved[:k]
+    hits = 0
+    sum_precision = 0.0
+    for i, doc_id in enumerate(top, start=1):
+        if doc_id in relevant_set:
+            hits += 1
+            sum_precision += hits / i
+    if hits == 0:
+        return 0.0
+    return sum_precision / min(len(relevant_set), k)
+
+
+def mean_average_precision(
+    query_results: list[tuple[list[str], list[str]]],
+    k: int,
+) -> float:
+    """Mean of average_precision_at_k over a list of (relevant, retrieved) pairs."""
+    if not query_results:
+        return 0.0
+    total = sum(
+        average_precision_at_k(relevant, retrieved, k)
+        for relevant, retrieved in query_results
+    )
+    return total / len(query_results)
