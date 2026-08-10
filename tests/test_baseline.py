@@ -24,3 +24,34 @@ class TestBaselineReport:
         for row in report["per_query"]:
             assert "retrieval_latency_ms" in row
             assert row["retrieval_latency_ms"] >= 0.0
+
+
+    def test_default_k_is_three(self):
+        subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "run_baseline.py")],
+            check=True,
+            cwd=ROOT,
+        )
+        report = json.loads((ROOT / "reports" / "baseline.json").read_text())
+        assert report["k"] == 3
+        for row in report["per_query"]:
+            assert row["k"] == 3
+            assert len(row["retrieved_doc_ids"]) <= 3
+
+    def test_k_override_recorded_in_report(self):
+        subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "run_baseline.py"), "--k", "2"],
+            check=True,
+            cwd=ROOT,
+        )
+        report = json.loads((ROOT / "reports" / "baseline.json").read_text())
+        assert report["k"] == 2
+        for row in report["per_query"]:
+            assert row["k"] == 2
+            assert len(row["retrieved_doc_ids"]) <= 2
+        # Restore default k=3 report so later gate tests see golden-compatible metrics.
+        subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "run_baseline.py")],
+            check=True,
+            cwd=ROOT,
+        )
