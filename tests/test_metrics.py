@@ -1,7 +1,15 @@
 """Unit tests for ranking metric helpers."""
 from __future__ import annotations
 
-from scripts.metrics import hit_rate_at_k, ndcg_at_k, precision_at_k, recall_at_k, reciprocal_rank
+from scripts.metrics import (
+    average_precision_at_k,
+    hit_rate_at_k,
+    mean_average_precision,
+    ndcg_at_k,
+    precision_at_k,
+    recall_at_k,
+    reciprocal_rank,
+)
 
 
 class TestPrecisionAtK:
@@ -81,3 +89,42 @@ class TestHitRateAtK:
     def test_empty_retrieved(self):
         assert hit_rate_at_k(["d1"], [], k=3) == 0.0
 
+
+
+class TestAveragePrecisionAtK:
+    def test_perfect_ranking(self):
+        assert average_precision_at_k(["d1", "d2"], ["d1", "d2", "d3"], k=3) == 1.0
+
+    def test_first_hit_only(self):
+        # P@1=1.0; divisor min(1,1)=1 when only one relevant in top-k window math
+        assert average_precision_at_k(["d1"], ["d1", "d9", "d8"], k=3) == 1.0
+
+    def test_second_position(self):
+        # hit at rank 2 => precision 1/2; one relevant => AP=0.5
+        assert average_precision_at_k(["d1"], ["d9", "d1", "d8"], k=3) == 0.5
+
+    def test_none_found(self):
+        assert average_precision_at_k(["d1"], ["d9", "d8"], k=2) == 0.0
+
+    def test_no_relevant(self):
+        assert average_precision_at_k([], ["d1", "d2"], k=2) == 1.0
+
+    def test_empty_retrieved(self):
+        assert average_precision_at_k(["d1"], [], k=3) == 0.0
+
+    def test_k_limits_depth(self):
+        # relevant only beyond k => 0
+        assert average_precision_at_k(["d1"], ["d9", "d8", "d1"], k=2) == 0.0
+
+
+class TestMeanAveragePrecision:
+    def test_mean_of_two_queries(self):
+        results = [
+            (["d1"], ["d1", "d2"]),
+            (["d1"], ["d9", "d1"]),
+        ]
+        # AP=1.0 and AP=0.5 => MAP=0.75
+        assert mean_average_precision(results, k=2) == 0.75
+
+    def test_empty_results(self):
+        assert mean_average_precision([], k=3) == 0.0

@@ -2,6 +2,7 @@
 """Precision@k, recall@k, and MRR baseline over datasets/tiny-qa.jsonl."""
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 import time
@@ -74,7 +75,21 @@ def p50(values: list[float]) -> float:
     return (ordered[mid - 1] + ordered[mid]) / 2.0
 
 
-def main():
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    """Parse CLI arguments for the baseline runner."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--k",
+        type=int,
+        default=K,
+        help=f"Retrieval depth for ranking metrics (default: {K})",
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None):
+    args = parse_args(argv)
+    k = args.k
     rows = []
     with DATASET.open() as f:
         for line in f:
@@ -91,9 +106,9 @@ def main():
     for row in rows:
         qid = row["query_id"]
         relevant = row["relevant_doc_ids"]
-        retrieved = resolve_retrieved(qid, row["query"], K)
+        retrieved = resolve_retrieved(qid, row["query"], k)
         start = time.perf_counter()
-        scores = score_query(relevant, retrieved, K)
+        scores = score_query(relevant, retrieved, k)
         elapsed_ms = latency_ms(start, time.perf_counter())
         latencies_ms.append(elapsed_ms)
         p = scores["precision_at_k"]
@@ -111,13 +126,13 @@ def main():
             "reciprocal_rank": rr,
             "ndcg_at_k": ndcg,
             "retrieval_latency_ms": elapsed_ms,
-            "k": K,
+            "k": k,
             "relevant_doc_ids": relevant,
-            "retrieved_doc_ids": retrieved[:K],
+            "retrieved_doc_ids": retrieved[:k],
         })
 
     report = {
-        "k": K,
+        "k": k,
         "n_queries": len(precisions),
         "mean_precision_at_k": sum(precisions) / len(precisions) if precisions else 0.0,
         "mean_recall_at_k": sum(recalls) / len(recalls) if recalls else 0.0,

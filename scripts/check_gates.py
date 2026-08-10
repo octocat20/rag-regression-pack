@@ -61,24 +61,26 @@ def verify_provenance(baseline: dict, golden: dict) -> None:
         )
 
 
-def check_minimum_gates(values: dict[str, float]) -> list[str]:
-    """Return metric keys that fall below absolute minimum gates."""
-    failed = []
+def check_minimum_gates(values: dict[str, float]) -> dict[str, tuple[float, float]]:
+    """Return failing metric -> (actual, limit) for absolute minimum gates."""
+    failed: dict[str, tuple[float, float]] = {}
     for key, minimum in GATES.items():
         actual = values[key]
         ok = actual + 1e-9 >= minimum
         status = "ok" if ok else "FAIL"
         print(f"{status}: {key}={actual:.4f} gate>={minimum:.2f}")
         if not ok:
-            failed.append(key)
+            failed[key] = (actual, minimum)
     return failed
 
 
-def check_golden_regression(values: dict[str, float], golden: dict) -> list[str]:
-    """Return metric keys that regress beyond the golden snapshot tolerance."""
+def check_golden_regression(
+    values: dict[str, float], golden: dict
+) -> dict[str, tuple[float, float]]:
+    """Return failing metric -> (actual, limit) for golden snapshot regressions."""
     expected_metrics = golden.get("metrics", {})
     tolerances = golden.get("max_regression", {})
-    failed = []
+    failed: dict[str, tuple[float, float]] = {}
 
     for key, expected in expected_metrics.items():
         tolerance = tolerances.get(key, 0.0)
@@ -91,7 +93,7 @@ def check_golden_regression(values: dict[str, float], golden: dict) -> list[str]
             f"(expected={expected:.4f}, max_regression={tolerance:.4f})"
         )
         if not ok:
-            failed.append(key)
+            failed[key] = (actual, floor)
     return failed
 
 
@@ -119,10 +121,23 @@ def run_checks(
 
     gate_failures = check_minimum_gates(values)
     golden_failures = check_golden_regression(values, golden)
-    failed = sorted(set(gate_failures + golden_failures))
+    failed_details: dict[str, tuple[float, float]] = {}
+    failed_details.update(gate_failures)
+    # Prefer the stricter (higher) limit when both checks fail the same metric.
+    for key, (actual, limit) in golden_failures.items():
+        if key in failed_details:
+            prev_actual, prev_limit = failed_details[key]
+            failed_details[key] = (actual, max(prev_limit, limit))
+        else:
+            failed_details[key] = (actual, limit)
+    failed = sorted(failed_details)
 
     if failed:
         print("gate failures: " + ", ".join(failed), file=sys.stderr)
+        print("failing metrics (actual vs limit):", file=sys.stderr)
+        for key in failed:
+            actual, limit = failed_details[key]
+            print(f"  {key}: actual={actual:.4f} limit={limit:.4f}", file=sys.stderr)
         return 1
 
     print("ok: all regression gates passed")
