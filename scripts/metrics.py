@@ -100,3 +100,15 @@ def mean_average_precision(
         for relevant, retrieved in query_results
     )
     return total / len(query_results)
+
+
+def f1_at_k(relevant: list[str], retrieved: list[str], k: int) -> float:
+    """Harmonic mean of precision_at_k and recall_at_k.
+
+    Returns 0.0 when precision and recall are both zero.
+    """
+    precision = precision_at_k(relevant, retrieved, k)
+    recall = recall_at_k(relevant, retrieved, k)
+    if precision + recall == 0.0:
+        return 0.0
+    return 2.0 * precision * recall / (precision + recall)
