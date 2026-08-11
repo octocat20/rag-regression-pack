@@ -84,6 +84,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=K,
         help=f"Retrieval depth for ranking metrics (default: {K})",
     )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=OUT,
+        help=f"Path for the baseline JSON report (default: {OUT})",
+    )
     return parser.parse_args(argv)
 
 
@@ -142,8 +148,9 @@ def main(argv: list[str] | None = None):
         "p50_retrieval_latency_ms": p50(latencies_ms) if latencies_ms else 0.0,
         "per_query": per_query,
     }
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(report, indent=2) + "\n")
+    out_path = Path(args.output)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps(report, indent=2))
 
 
