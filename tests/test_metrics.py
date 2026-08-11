@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from scripts.metrics import (
     average_precision_at_k,
+    f1_at_k,
     hit_rate_at_k,
     mean_average_precision,
     ndcg_at_k,
@@ -128,3 +129,29 @@ class TestMeanAveragePrecision:
 
     def test_empty_results(self):
         assert mean_average_precision([], k=3) == 0.0
+
+
+class TestF1AtK:
+    def test_perfect_ranking(self):
+        assert f1_at_k(["d1", "d2"], ["d1", "d2"], k=2) == 1.0
+
+    def test_partial_overlap(self):
+        # P@2=0.5 (1/2), R@2=0.5 (1/2) => F1=0.5
+        assert f1_at_k(["d1", "d2"], ["d1", "d9"], k=2) == 0.5
+
+    def test_none_found(self):
+        assert f1_at_k(["d1"], ["d9", "d8"], k=2) == 0.0
+
+    def test_no_relevant_with_retrieved(self):
+        # P=0, R=1 => F1=0
+        assert f1_at_k([], ["d1", "d2"], k=2) == 0.0
+
+    def test_empty_retrieved(self):
+        # P=0, R=0 => F1=0
+        assert f1_at_k(["d1"], [], k=3) == 0.0
+
+    def test_k_limits_depth(self):
+        # only first of two relevant in top-1: P=1, R=0.5 => F1=2/3
+        score = f1_at_k(["d1", "d2"], ["d1", "d9", "d2"], k=1)
+        assert abs(score - (2.0 / 3.0)) < 1e-12
+

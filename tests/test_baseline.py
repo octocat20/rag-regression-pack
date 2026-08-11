@@ -55,3 +55,43 @@ class TestBaselineReport:
             check=True,
             cwd=ROOT,
         )
+
+
+    def test_output_override_writes_custom_path(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "custom-baseline.json"
+            subprocess.run(
+                [
+                    sys.executable,
+                    str(ROOT / "scripts" / "run_baseline.py"),
+                    "--output",
+                    str(out),
+                ],
+                check=True,
+                cwd=ROOT,
+            )
+            assert out.is_file()
+            report = json.loads(out.read_text())
+            assert report["k"] == 3
+            assert report["n_queries"] > 0
+        # Restore default report so later gate tests see golden-compatible metrics.
+        subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "run_baseline.py")],
+            check=True,
+            cwd=ROOT,
+        )
+
+    def test_default_output_is_reports_baseline(self):
+        default_path = ROOT / "reports" / "baseline.json"
+        if default_path.exists():
+            default_path.unlink()
+        subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "run_baseline.py")],
+            check=True,
+            cwd=ROOT,
+        )
+        assert default_path.is_file()
+        report = json.loads(default_path.read_text())
+        assert "mean_precision_at_k" in report
+
