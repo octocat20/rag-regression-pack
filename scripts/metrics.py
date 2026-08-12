@@ -112,3 +112,15 @@ def f1_at_k(relevant: list[str], retrieved: list[str], k: int) -> float:
     if precision + recall == 0.0:
         return 0.0
     return 2.0 * precision * recall / (precision + recall)
+
+
+def r_precision(relevant: list[str], retrieved: list[str]) -> float:
+    """Precision at R, where R is the number of unique relevant documents.
+
+    Empty relevant sets score 1.0 to match recall_at_k style.
+    """
+    relevant_set = set(relevant)
+    if not relevant_set:
+        return 1.0
+    return precision_at_k(relevant, retrieved, k=len(relevant_set))
+
