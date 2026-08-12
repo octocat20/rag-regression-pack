@@ -8,6 +8,7 @@ from scripts.metrics import (
     mean_average_precision,
     ndcg_at_k,
     precision_at_k,
+    r_precision,
     recall_at_k,
     reciprocal_rank,
 )
@@ -154,4 +155,30 @@ class TestF1AtK:
         # only first of two relevant in top-1: P=1, R=0.5 => F1=2/3
         score = f1_at_k(["d1", "d2"], ["d1", "d9", "d2"], k=1)
         assert abs(score - (2.0 / 3.0)) < 1e-12
+
+
+class TestRPrecision:
+    def test_perfect_ranking(self):
+        assert r_precision(["d1", "d2"], ["d1", "d2", "d3"]) == 1.0
+
+    def test_partial_overlap(self):
+        # R=2 so P@2=0.5 when only the first retrieved doc is relevant
+        assert r_precision(["d1", "d2"], ["d1", "d9", "d2"]) == 0.5
+
+    def test_none_found(self):
+        assert r_precision(["d1"], ["d9", "d8"]) == 0.0
+
+    def test_no_relevant(self):
+        assert r_precision([], ["d1", "d2"]) == 1.0
+
+    def test_empty_retrieved(self):
+        assert r_precision(["d1"], []) == 0.0
+
+    def test_r_limits_depth(self):
+        # third retrieved is relevant but R=2 so it is ignored
+        assert r_precision(["d1", "d2"], ["d9", "d8", "d1"]) == 0.0
+
+    def test_duplicate_relevant_uses_unique_count(self):
+        # unique relevant R=1, first retrieved is relevant => 1.0
+        assert r_precision(["d1", "d1"], ["d1", "d9"]) == 1.0
 
