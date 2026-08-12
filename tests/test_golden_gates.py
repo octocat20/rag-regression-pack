@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from scripts.check_gates import ProvenanceError, run_checks, verify_provenance
+from scripts.check_gates import BASELINE, CITATIONS, GOLDEN, ProvenanceError, parse_args, run_checks, verify_provenance
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -144,3 +144,86 @@ class TestGoldenGateScript:
         )
         assert result.returncode == 0
         assert "ok: all regression gates passed" in result.stdout
+
+
+class TestGateReportPathFlags:
+    def test_parse_args_defaults_match_current_paths(self):
+        args = parse_args([])
+        assert args.baseline == BASELINE
+        assert args.citations == CITATIONS
+        assert args.golden == GOLDEN
+
+    def test_parse_args_overrides_report_paths(self, tmp_path: Path):
+        baseline = tmp_path / "baseline.json"
+        citations = tmp_path / "citations.json"
+        golden = tmp_path / "golden.json"
+        args = parse_args(
+            [
+                "--baseline",
+                str(baseline),
+                "--citations",
+                str(citations),
+                "--golden",
+                str(golden),
+            ]
+        )
+        assert args.baseline == baseline
+        assert args.citations == citations
+        assert args.golden == golden
+
+    def test_cli_custom_paths_pass(self, tmp_path: Path):
+        ensure_reports()
+        baseline = tmp_path / "baseline.json"
+        citations = tmp_path / "citations.json"
+        golden = tmp_path / "golden.json"
+        baseline.write_text((ROOT / "reports" / "baseline.json").read_text())
+        citations.write_text((ROOT / "reports" / "citations.json").read_text())
+        golden.write_text((ROOT / "reports" / "golden" / "metrics.json").read_text())
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(ROOT / "scripts" / "check_gates.py"),
+                "--baseline",
+                str(baseline),
+                "--citations",
+                str(citations),
+                "--golden",
+                str(golden),
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0
+        assert "ok: all regression gates passed" in result.stdout
+
+    def test_cli_custom_paths_detect_regression(self, tmp_path: Path):
+        ensure_reports()
+        baseline = json.loads((ROOT / "reports" / "baseline.json").read_text())
+        citations = json.loads((ROOT / "reports" / "citations.json").read_text())
+        golden = json.loads((ROOT / "reports" / "golden" / "metrics.json").read_text())
+        baseline["mrr"] = 0.10
+        baseline_path = tmp_path / "baseline.json"
+        citations_path = tmp_path / "citations.json"
+        golden_path = tmp_path / "golden.json"
+        write_json(baseline_path, baseline)
+        write_json(citations_path, citations)
+        write_json(golden_path, golden)
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(ROOT / "scripts" / "check_gates.py"),
+                "--baseline",
+                str(baseline_path),
+                "--citations",
+                str(citations_path),
+                "--golden",
+                str(golden_path),
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 1
+        assert "gate failures:" in result.stderr
+

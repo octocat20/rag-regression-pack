@@ -2,6 +2,7 @@
 """Fail CI if retrieval metrics regress below fixed gates or golden snapshots."""
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 from pathlib import Path
@@ -144,8 +145,37 @@ def run_checks(
     return 0
 
 
-def main() -> int:
-    return run_checks()
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    """Parse CLI arguments for regression gate checks."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--baseline",
+        type=Path,
+        default=BASELINE,
+        help=f"Path to baseline JSON report (default: {BASELINE})",
+    )
+    parser.add_argument(
+        "--citations",
+        type=Path,
+        default=CITATIONS,
+        help=f"Path to citations JSON report (default: {CITATIONS})",
+    )
+    parser.add_argument(
+        "--golden",
+        type=Path,
+        default=GOLDEN,
+        help=f"Path to golden metrics snapshot (default: {GOLDEN})",
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = parse_args(argv)
+    return run_checks(
+        baseline_path=args.baseline,
+        citations_path=args.citations,
+        golden_path=args.golden,
+    )
 
 
 if __name__ == "__main__":
