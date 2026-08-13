@@ -2,9 +2,11 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 from pathlib import Path
 
-from scripts.check_dataset import load_jsonl, validate_dataset
+from scripts.check_dataset import CORPUS, QA, load_jsonl, parse_args, validate_dataset
 
 ROOT = Path(__file__).resolve().parents[1]
 DATASET = ROOT / "datasets" / "tiny-qa.jsonl"
@@ -50,3 +52,90 @@ class TestTinyDataset:
 
     def test_validate_dataset_passes(self):
         validate_dataset()
+
+
+
+class TestDatasetPathFlags:
+    def test_parse_args_defaults_match_current_paths(self):
+        args = parse_args([])
+        assert args.qa == QA
+        assert args.corpus == CORPUS
+
+    def test_parse_args_overrides_paths(self, tmp_path: Path):
+        qa = tmp_path / "qa.jsonl"
+        corpus = tmp_path / "corpus.jsonl"
+        args = parse_args(["--qa", str(qa), "--corpus", str(corpus)])
+        assert args.qa == qa
+        assert args.corpus == corpus
+
+    def test_no_flag_stdout_unchanged(self):
+        result = subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "check_dataset.py")],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        assert result.stdout == "dataset references ok\n"
+
+    def test_custom_paths_pass(self, tmp_path: Path):
+        corpus = tmp_path / "corpus.jsonl"
+        qa = tmp_path / "qa.jsonl"
+        corpus.write_text(json.dumps({"doc_id": "d1", "text": "alpha"}) + "\n")
+        qa.write_text(
+            json.dumps(
+                {
+                    "query_id": "q1",
+                    "query": "alpha?",
+                    "relevant_doc_ids": ["d1"],
+                    "expected_citations": ["d1"],
+                }
+            )
+            + "\n"
+        )
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(ROOT / "scripts" / "check_dataset.py"),
+                "--qa",
+                str(qa),
+                "--corpus",
+                str(corpus),
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0
+        assert result.stdout == "dataset references ok\n"
+
+    def test_custom_paths_detect_unknown_doc(self, tmp_path: Path):
+        corpus = tmp_path / "corpus.jsonl"
+        qa = tmp_path / "qa.jsonl"
+        corpus.write_text(json.dumps({"doc_id": "d1", "text": "alpha"}) + "\n")
+        qa.write_text(
+            json.dumps(
+                {
+                    "query_id": "q1",
+                    "query": "missing?",
+                    "relevant_doc_ids": ["d9"],
+                    "expected_citations": ["d1"],
+                }
+            )
+            + "\n"
+        )
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(ROOT / "scripts" / "check_dataset.py"),
+                "--qa",
+                str(qa),
+                "--corpus",
+                str(corpus),
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode != 0
+        assert "unknown doc ids" in (result.stderr + result.stdout)
