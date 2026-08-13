@@ -2,6 +2,7 @@
 """Validate that QA corpus references point at real corpus documents."""
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 from pathlib import Path
@@ -43,9 +44,28 @@ def validate_dataset(corpus_path: Path = CORPUS, qa_path: Path = QA) -> None:
                 )
 
 
-def main() -> int:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    """Parse CLI arguments for dataset reference checks."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--qa",
+        type=Path,
+        default=QA,
+        help=f"Path to QA JSONL dataset (default: {QA})",
+    )
+    parser.add_argument(
+        "--corpus",
+        type=Path,
+        default=CORPUS,
+        help=f"Path to corpus JSONL (default: {CORPUS})",
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> int:
     """Run dataset reference checks and print an ok message."""
-    validate_dataset()
+    args = parse_args(argv)
+    validate_dataset(corpus_path=args.corpus, qa_path=args.qa)
     print("dataset references ok")
     return 0
 
