@@ -2,6 +2,7 @@
 """Check that simulated answers cite expected supporting docs."""
 from __future__ import annotations
 
+import argparse
 import json
 from pathlib import Path
 
@@ -50,7 +51,20 @@ def score_row(expected, cited):
     }
 
 
-def main():
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    """Parse CLI arguments for the citation checker."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=OUT,
+        help=f"Path for the citations JSON report (default: {OUT})",
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None):
+    args = parse_args(argv)
     rows = []
     with DATASET.open() as f:
         for line in f:
@@ -93,8 +107,9 @@ def main():
         "supported_citations": supported_citations,
         "per_query": per_query,
     }
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(report, indent=2) + "\n")
+    out_path = Path(args.output)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps(report, indent=2))
 
 

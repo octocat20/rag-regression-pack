@@ -6,7 +6,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from scripts.check_citations import citation_support_rate
+from scripts.check_citations import OUT, citation_support_rate, parse_args
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -37,3 +37,33 @@ class TestCitationReport:
         assert report["total_citations"] == 12
         assert report["supported_citations"] == 9
         assert abs(report["citation_support_rate"] - 9 / 12) < 1e-9
+
+
+class TestCitationOutputPath:
+    def test_parse_args_default_is_reports_citations(self):
+        args = parse_args([])
+        assert args.output == OUT
+
+    def test_parse_args_output_override(self, tmp_path: Path):
+        out = tmp_path / "nested" / "citations.json"
+        args = parse_args(["--output", str(out)])
+        assert args.output == out
+
+    def test_output_override_writes_custom_path(self, tmp_path: Path):
+        out = tmp_path / "nested" / "out" / "citations.json"
+        subprocess.run(
+            [
+                sys.executable,
+                str(ROOT / "scripts" / "check_citations.py"),
+                "--output",
+                str(out),
+            ],
+            check=True,
+            cwd=ROOT,
+        )
+        assert out.is_file()
+        report = json.loads(out.read_text())
+        assert "citation_support_rate" in report
+        assert report["n_queries"] > 0
+        assert report["total_citations"] == 12
+        assert report["supported_citations"] == 9
