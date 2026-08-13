@@ -124,3 +124,18 @@ def r_precision(relevant: list[str], retrieved: list[str]) -> float:
         return 1.0
     return precision_at_k(relevant, retrieved, k=len(relevant_set))
 
+
+
+def mrr_at_k(relevant: list[str], retrieved: list[str], k: int) -> float:
+    """Reciprocal rank of the first relevant doc in retrieved[:k].
+
+    Empty relevant sets score 1.0 to match recall_at_k style.
+    """
+    relevant_set = set(relevant)
+    if not relevant_set:
+        return 1.0
+    top = retrieved[:k]
+    for i, doc_id in enumerate(top, start=1):
+        if doc_id in relevant_set:
+            return 1.0 / i
+    return 0.0

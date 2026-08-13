@@ -6,6 +6,7 @@ from scripts.metrics import (
     f1_at_k,
     hit_rate_at_k,
     mean_average_precision,
+    mrr_at_k,
     ndcg_at_k,
     precision_at_k,
     r_precision,
@@ -182,3 +183,29 @@ class TestRPrecision:
         # unique relevant R=1, first retrieved is relevant => 1.0
         assert r_precision(["d1", "d1"], ["d1", "d9"]) == 1.0
 
+
+
+class TestMrrAtK:
+    def test_first_position(self):
+        assert mrr_at_k(["d1"], ["d1", "d2"], k=3) == 1.0
+
+    def test_second_position(self):
+        assert mrr_at_k(["d2"], ["d9", "d2"], k=3) == 0.5
+
+    def test_not_found(self):
+        assert mrr_at_k(["d1"], ["d9", "d8"], k=2) == 0.0
+
+    def test_hit_outside_k(self):
+        assert mrr_at_k(["d1"], ["d9", "d8", "d1"], k=2) == 0.0
+
+    def test_no_relevant(self):
+        assert mrr_at_k([], ["d1", "d2"], k=2) == 1.0
+
+    def test_empty_retrieved(self):
+        assert mrr_at_k(["d1"], [], k=3) == 0.0
+
+    def test_first_relevant_wins(self):
+        assert mrr_at_k(["d1", "d2"], ["d2", "d1"], k=3) == 1.0
+
+    def test_k_limits_depth(self):
+        assert mrr_at_k(["d1"], ["d9", "d1", "d2"], k=1) == 0.0
