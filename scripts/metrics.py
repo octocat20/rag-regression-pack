@@ -139,3 +139,20 @@ def mrr_at_k(relevant: list[str], retrieved: list[str], k: int) -> float:
         if doc_id in relevant_set:
             return 1.0 / i
     return 0.0
+
+
+def dcg_at_k(relevant: list[str], retrieved: list[str], k: int) -> float:
+    """Discounted cumulative gain at k with binary relevance.
+
+    Empty relevant sets score 1.0 to match recall_at_k style.
+    """
+    relevant_set = set(relevant)
+    if not relevant_set:
+        return 1.0
+    top = retrieved[:k]
+    total = 0.0
+    for i, doc_id in enumerate(top, start=1):
+        if doc_id in relevant_set:
+            total += 1.0 / math.log2(i + 1)
+    return total
+
