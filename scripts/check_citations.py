@@ -55,6 +55,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     """Parse CLI arguments for the citation checker."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
+        "--qa",
+        type=Path,
+        default=DATASET,
+        help=f"Path to QA JSONL dataset (default: {DATASET})",
+    )
+    parser.add_argument(
         "--output",
         type=Path,
         default=OUT,
@@ -66,7 +72,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 def main(argv: list[str] | None = None):
     args = parse_args(argv)
     rows = []
-    with DATASET.open() as f:
+    with Path(args.qa).open() as f:
         for line in f:
             line = line.strip()
             if line:

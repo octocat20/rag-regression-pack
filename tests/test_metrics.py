@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from scripts.metrics import (
     average_precision_at_k,
+    dcg_at_k,
     f1_at_k,
     hit_rate_at_k,
     mean_average_precision,
@@ -209,3 +210,31 @@ class TestMrrAtK:
 
     def test_k_limits_depth(self):
         assert mrr_at_k(["d1"], ["d9", "d1", "d2"], k=1) == 0.0
+
+
+
+class TestDcgAtK:
+    def test_first_position(self):
+        assert dcg_at_k(["d1"], ["d1", "d2"], k=3) == 1.0
+
+    def test_second_position(self):
+        import math
+        assert dcg_at_k(["d1"], ["d9", "d1"], k=3) == 1.0 / math.log2(3)
+
+    def test_none_found(self):
+        assert dcg_at_k(["d1"], ["d9", "d8"], k=2) == 0.0
+
+    def test_no_relevant(self):
+        assert dcg_at_k([], ["d1", "d2"], k=2) == 1.0
+
+    def test_empty_retrieved(self):
+        assert dcg_at_k(["d1"], [], k=3) == 0.0
+
+    def test_k_limits_depth(self):
+        assert dcg_at_k(["d1"], ["d9", "d1", "d2"], k=1) == 0.0
+
+    def test_multiple_hits(self):
+        import math
+        expected = 1.0 + 1.0 / math.log2(3)
+        assert dcg_at_k(["d1", "d2"], ["d1", "d2"], k=2) == expected
+
