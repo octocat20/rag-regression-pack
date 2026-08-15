@@ -4,6 +4,7 @@ from __future__ import annotations
 from scripts.metrics import (
     average_precision_at_k,
     dcg_at_k,
+    idcg_at_k,
     f1_at_k,
     hit_rate_at_k,
     mean_average_precision,
@@ -237,4 +238,31 @@ class TestDcgAtK:
         import math
         expected = 1.0 + 1.0 / math.log2(3)
         assert dcg_at_k(["d1", "d2"], ["d1", "d2"], k=2) == expected
+
+
+
+
+class TestIdcgAtK:
+    def test_single_relevant(self):
+        assert idcg_at_k(["d1"], k=3) == 1.0
+
+    def test_two_relevant(self):
+        import math
+        expected = 1.0 + 1.0 / math.log2(3)
+        assert idcg_at_k(["d1", "d2"], k=2) == expected
+
+    def test_no_relevant(self):
+        assert idcg_at_k([], k=2) == 1.0
+
+    def test_k_limits_depth(self):
+        # three relevant but k=1 => only first ideal gain
+        assert idcg_at_k(["d1", "d2", "d3"], k=1) == 1.0
+
+    def test_more_k_than_relevant(self):
+        import math
+        expected = 1.0 + 1.0 / math.log2(3)
+        assert idcg_at_k(["d1", "d2"], k=5) == expected
+
+    def test_duplicate_relevant_uses_unique_count(self):
+        assert idcg_at_k(["d1", "d1"], k=3) == 1.0
 

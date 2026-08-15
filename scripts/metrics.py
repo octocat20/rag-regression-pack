@@ -156,3 +156,15 @@ def dcg_at_k(relevant: list[str], retrieved: list[str], k: int) -> float:
             total += 1.0 / math.log2(i + 1)
     return total
 
+
+
+def idcg_at_k(relevant: list[str], k: int) -> float:
+    """Ideal discounted cumulative gain at k with binary relevance.
+
+    Empty relevant sets score 1.0 to match recall_at_k style.
+    """
+    relevant_set = set(relevant)
+    if not relevant_set:
+        return 1.0
+    ideal_count = min(len(relevant_set), k)
+    return sum(1.0 / math.log2(i + 1) for i in range(1, ideal_count + 1))
