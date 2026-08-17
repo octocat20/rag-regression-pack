@@ -6,7 +6,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from scripts.run_baseline import DATASET, OUT, parse_args
+from scripts.run_baseline import CORPUS, DATASET, OUT, parse_args
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -141,6 +141,48 @@ class TestBaselineQaPath:
         assert report["k"] == 3
         assert len(report["per_query"]) == 1
         assert report["per_query"][0]["query_id"] == "q1"
+        # Restore default report so later gate tests see golden-compatible metrics.
+        subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "run_baseline.py")],
+            check=True,
+            cwd=ROOT,
+        )
+
+
+
+class TestBaselineCorpusPath:
+    def test_parse_args_default_corpus_is_corpus(self):
+        args = parse_args([])
+        assert args.corpus == CORPUS
+
+    def test_parse_args_corpus_override(self, tmp_path: Path):
+        corpus = tmp_path / "custom-corpus.jsonl"
+        args = parse_args(["--corpus", str(corpus)])
+        assert args.corpus == corpus
+
+    def test_corpus_override_with_custom_output(self, tmp_path: Path):
+        corpus = tmp_path / "custom-corpus.jsonl"
+        out = tmp_path / "baseline.json"
+        # Minimal corpus; fixture RETRIEVED covers default queries so BM25 may not run.
+        corpus.write_text(
+            json.dumps({"doc_id": "d1", "text": "retrieval augmented generation"})
+            + "\n"
+        )
+        subprocess.run(
+            [
+                sys.executable,
+                str(ROOT / "scripts" / "run_baseline.py"),
+                "--corpus",
+                str(corpus),
+                "--output",
+                str(out),
+            ],
+            check=True,
+            cwd=ROOT,
+        )
+        report = json.loads(out.read_text())
+        assert report["n_queries"] > 0
+        assert report["k"] == 3
         # Restore default report so later gate tests see golden-compatible metrics.
         subprocess.run(
             [sys.executable, str(ROOT / "scripts" / "run_baseline.py")],

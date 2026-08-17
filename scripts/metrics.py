@@ -168,3 +168,25 @@ def idcg_at_k(relevant: list[str], k: int) -> float:
         return 1.0
     ideal_count = min(len(relevant_set), k)
     return sum(1.0 / math.log2(i + 1) for i in range(1, ideal_count + 1))
+
+
+def err_at_k(relevant: list[str], retrieved: list[str], k: int) -> float:
+    """Expected reciprocal rank at k with binary relevance.
+
+    Uses max relevance grade 1 so R_i is 1.0 for hits and 0.0 otherwise.
+    Empty relevant sets score 1.0 to match recall_at_k style.
+    """
+    relevant_set = set(relevant)
+    if not relevant_set:
+        return 1.0
+    top = retrieved[:k]
+    err = 0.0
+    p_continue = 1.0
+    for rank, doc_id in enumerate(top, start=1):
+        r_i = 1.0 if doc_id in relevant_set else 0.0
+        err += (1.0 / rank) * p_continue * r_i
+        p_continue *= 1.0 - r_i
+        if p_continue == 0.0:
+            break
+    return err
+

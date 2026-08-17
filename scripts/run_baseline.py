@@ -33,22 +33,30 @@ RETRIEVED = {
 }
 
 _BM25_SCORER = None
+_BM25_CORPUS_PATH = None
 
 
-def get_bm25_scorer():
-    """Lazy-load the corpus BM25 scorer."""
-    global _BM25_SCORER
-    if _BM25_SCORER is None:
-        _BM25_SCORER = build_scorer(CORPUS)
+def get_bm25_scorer(corpus_path: Path = CORPUS):
+    """Lazy-load the corpus BM25 scorer, resetting when the path changes."""
+    global _BM25_SCORER, _BM25_CORPUS_PATH
+    corpus_path = Path(corpus_path)
+    if _BM25_SCORER is None or _BM25_CORPUS_PATH != corpus_path:
+        _BM25_SCORER = build_scorer(corpus_path)
+        _BM25_CORPUS_PATH = corpus_path
     return _BM25_SCORER
 
 
-def resolve_retrieved(query_id: str, query: str, k: int) -> list[str]:
+def resolve_retrieved(
+    query_id: str,
+    query: str,
+    k: int,
+    corpus_path: Path = CORPUS,
+) -> list[str]:
     """Use fixture rankings when present, otherwise rank with BM25."""
     fixture = RETRIEVED.get(query_id)
     if fixture is not None:
         return fixture[:k]
-    return get_bm25_scorer().rank_doc_ids(query, top_k=k)
+    return get_bm25_scorer(corpus_path).rank_doc_ids(query, top_k=k)
 
 
 def score_query(relevant: list[str], retrieved: list[str], k: int) -> dict[str, float]:
@@ -85,6 +93,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help=f"Path to QA JSONL dataset (default: {DATASET})",
     )
     parser.add_argument(
+        "--corpus",
+        type=Path,
+        default=CORPUS,
+        help=f"Path to corpus JSONL (default: {CORPUS})",
+    )
+    parser.add_argument(
         "--k",
         type=int,
         default=K,
@@ -118,7 +132,7 @@ def main(argv: list[str] | None = None):
     for row in rows:
         qid = row["query_id"]
         relevant = row["relevant_doc_ids"]
-        retrieved = resolve_retrieved(qid, row["query"], k)
+        retrieved = resolve_retrieved(qid, row["query"], k, corpus_path=args.corpus)
         start = time.perf_counter()
         scores = score_query(relevant, retrieved, k)
         elapsed_ms = latency_ms(start, time.perf_counter())
