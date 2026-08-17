@@ -4,6 +4,7 @@ from __future__ import annotations
 from scripts.metrics import (
     average_precision_at_k,
     dcg_at_k,
+    err_at_k,
     idcg_at_k,
     f1_at_k,
     hit_rate_at_k,
@@ -265,4 +266,29 @@ class TestIdcgAtK:
 
     def test_duplicate_relevant_uses_unique_count(self):
         assert idcg_at_k(["d1", "d1"], k=3) == 1.0
+
+
+
+class TestErrAtK:
+    def test_first_position(self):
+        assert err_at_k(["d1"], ["d1", "d2"], k=3) == 1.0
+
+    def test_second_position(self):
+        assert err_at_k(["d1"], ["d9", "d1"], k=3) == 0.5
+
+    def test_none_found(self):
+        assert err_at_k(["d1"], ["d9", "d8"], k=2) == 0.0
+
+    def test_no_relevant(self):
+        assert err_at_k([], ["d1", "d2"], k=2) == 1.0
+
+    def test_empty_retrieved(self):
+        assert err_at_k(["d1"], [], k=3) == 0.0
+
+    def test_k_limits_depth(self):
+        assert err_at_k(["d1"], ["d9", "d1", "d2"], k=1) == 0.0
+
+    def test_first_relevant_stops(self):
+        # Binary ERR stops after first relevant; later hits do not add.
+        assert err_at_k(["d1", "d2"], ["d2", "d1"], k=3) == 1.0
 
