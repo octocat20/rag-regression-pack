@@ -13,6 +13,7 @@ from scripts.metrics import (
     ndcg_at_k,
     precision_at_k,
     r_precision,
+    rbp_at_k,
     recall_at_k,
     reciprocal_rank,
 )
@@ -292,3 +293,31 @@ class TestErrAtK:
         # Binary ERR stops after first relevant; later hits do not add.
         assert err_at_k(["d1", "d2"], ["d2", "d1"], k=3) == 1.0
 
+
+class TestRbpAtK:
+    def test_first_position(self):
+        expected = (1.0 - 0.8) * (0.8 ** 0)
+        assert abs(rbp_at_k(["d1"], ["d1", "d2"], k=3) - expected) < 1e-12
+
+    def test_second_position(self):
+        expected = (1.0 - 0.8) * (0.8 ** 1)
+        assert abs(rbp_at_k(["d1"], ["d9", "d1"], k=3) - expected) < 1e-12
+
+    def test_none_found(self):
+        assert rbp_at_k(["d1"], ["d9", "d8"], k=2) == 0.0
+
+    def test_no_relevant(self):
+        assert rbp_at_k([], ["d1", "d2"], k=2) == 1.0
+
+    def test_empty_retrieved(self):
+        assert rbp_at_k(["d1"], [], k=3) == 0.0
+
+    def test_k_limits_depth(self):
+        assert rbp_at_k(["d1"], ["d9", "d1", "d2"], k=1) == 0.0
+
+    def test_multiple_hits(self):
+        expected = (1.0 - 0.8) * (1.0 + 0.8)
+        assert abs(rbp_at_k(["d1", "d2"], ["d1", "d2"], k=2) - expected) < 1e-12
+
+    def test_custom_persistence(self):
+        assert rbp_at_k(["d1"], ["d1", "d2"], k=3, persistence=0.5) == 0.5

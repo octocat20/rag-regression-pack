@@ -8,6 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DATASET = ROOT / "datasets" / "tiny-qa.jsonl"
+CORPUS = ROOT / "datasets" / "tiny-corpus.jsonl"
 OUT = ROOT / "reports" / "citations.json"
 
 # Simulated model answers: cited doc ids claimed in the response.
@@ -22,6 +23,17 @@ ANSWER_CITATIONS = {
     "q8": ["d7"],
     "q9": ["d6", "d1"],
 }
+
+
+def load_jsonl(path: Path) -> list[dict]:
+    """Load non-empty JSONL rows from path."""
+    rows: list[dict] = []
+    with Path(path).open() as handle:
+        for line in handle:
+            line = line.strip()
+            if line:
+                rows.append(json.loads(line))
+    return rows
 
 
 def citation_support_rate(expected: list[str], cited: list[str]) -> float:
@@ -61,6 +73,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help=f"Path to QA JSONL dataset (default: {DATASET})",
     )
     parser.add_argument(
+        "--corpus",
+        type=Path,
+        default=CORPUS,
+        help=f"Path to corpus JSONL (default: {CORPUS})",
+    )
+    parser.add_argument(
         "--output",
         type=Path,
         default=OUT,
@@ -71,12 +89,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None):
     args = parse_args(argv)
-    rows = []
-    with Path(args.qa).open() as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                rows.append(json.loads(line))
+    # Load corpus so --corpus is honored; scoring stays QA-citation based.
+    load_jsonl(args.corpus)
+    rows = load_jsonl(Path(args.qa))
 
     per_query = []
     precisions = []

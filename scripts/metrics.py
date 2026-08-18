@@ -190,3 +190,24 @@ def err_at_k(relevant: list[str], retrieved: list[str], k: int) -> float:
             break
     return err
 
+
+def rbp_at_k(
+    relevant: list[str],
+    retrieved: list[str],
+    k: int,
+    persistence: float = 0.8,
+) -> float:
+    """Rank-biased precision at k with binary relevance.
+
+    Uses persistence p (default 0.8): (1-p) * sum r_i * p^{i-1}.
+    Empty relevant sets score 1.0 to match recall_at_k style.
+    """
+    relevant_set = set(relevant)
+    if not relevant_set:
+        return 1.0
+    top = retrieved[:k]
+    weighted = 0.0
+    for rank, doc_id in enumerate(top, start=1):
+        if doc_id in relevant_set:
+            weighted += persistence ** (rank - 1)
+    return (1.0 - persistence) * weighted

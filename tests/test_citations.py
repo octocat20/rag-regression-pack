@@ -6,7 +6,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from scripts.check_citations import DATASET, OUT, citation_support_rate, parse_args
+from scripts.check_citations import CORPUS, DATASET, OUT, citation_support_rate, parse_args
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -111,3 +111,37 @@ class TestCitationQaPath:
         assert report["total_citations"] == 1
         assert report["supported_citations"] == 1
 
+
+class TestCitationCorpusPath:
+    def test_parse_args_default_corpus_is_corpus(self):
+        args = parse_args([])
+        assert args.corpus == CORPUS
+
+    def test_parse_args_corpus_override(self, tmp_path: Path):
+        corpus = tmp_path / "custom-corpus.jsonl"
+        args = parse_args(["--corpus", str(corpus)])
+        assert args.corpus == corpus
+
+    def test_corpus_override_with_custom_output(self, tmp_path: Path):
+        corpus = tmp_path / "custom-corpus.jsonl"
+        out = tmp_path / "citations.json"
+        corpus.write_text(
+            json.dumps({"doc_id": "d1", "text": "retrieval augmented generation"})
+            + "\n"
+        )
+        subprocess.run(
+            [
+                sys.executable,
+                str(ROOT / "scripts" / "check_citations.py"),
+                "--corpus",
+                str(corpus),
+                "--output",
+                str(out),
+            ],
+            check=True,
+            cwd=ROOT,
+        )
+        report = json.loads(out.read_text())
+        assert report["n_queries"] > 0
+        assert report["total_citations"] == 12
+        assert report["supported_citations"] == 9
