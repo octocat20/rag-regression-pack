@@ -9,11 +9,14 @@ Run the full local regression workflow:
 ```bash
 python scripts/run_baseline.py
 python scripts/check_citations.py
+python scripts/summarize_reports.py
 python scripts/check_gates.py
 pytest tests/ -v
 ```
 
 Generated reports land in `reports/`. Golden snapshots live in `reports/golden/`.
+
+Need a compact snapshot for dashboards or PR notes? Run `python scripts/summarize_reports.py` to combine baseline and citation outputs into `reports/summary.json`.
 
 ## Workflow
 
