@@ -190,3 +190,48 @@ class TestBaselineCorpusPath:
             cwd=ROOT,
         )
 
+
+class TestBaselineQaRobustness:
+    def test_empty_qa_file_produces_zeroed_report(self, tmp_path: Path):
+        qa = tmp_path / "empty-qa.jsonl"
+        out = tmp_path / "baseline-empty.json"
+        qa.write_text("\n")
+        subprocess.run(
+            [
+                sys.executable,
+                str(ROOT / "scripts" / "run_baseline.py"),
+                "--qa",
+                str(qa),
+                "--output",
+                str(out),
+            ],
+            check=True,
+            cwd=ROOT,
+        )
+        report = json.loads(out.read_text())
+        assert report["n_queries"] == 0
+        assert report["per_query"] == []
+
+    def test_malformed_qa_row_fails_with_decode_error(self, tmp_path: Path):
+        qa = tmp_path / "malformed-qa.jsonl"
+        qa.write_text('{"query_id": "q1"\n')
+        result = subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "run_baseline.py"), "--qa", str(qa)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode != 0
+        assert "JSONDecodeError" in (result.stderr + result.stdout)
+
+    def test_missing_required_qa_fields_fails_fast(self, tmp_path: Path):
+        qa = tmp_path / "missing-fields-qa.jsonl"
+        qa.write_text(json.dumps({"query_id": "q1", "query": "what is rag"}) + "\n")
+        result = subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "run_baseline.py"), "--qa", str(qa)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode != 0
+        assert "relevant_doc_ids" in (result.stderr + result.stdout)

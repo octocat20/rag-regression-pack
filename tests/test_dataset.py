@@ -139,3 +139,46 @@ class TestDatasetPathFlags:
         )
         assert result.returncode != 0
         assert "unknown doc ids" in (result.stderr + result.stdout)
+
+class TestDatasetQaRobustness:
+    def test_empty_qa_file_is_valid(self, tmp_path: Path):
+        corpus = tmp_path / "corpus.jsonl"
+        qa = tmp_path / "qa-empty.jsonl"
+        corpus.write_text(json.dumps({"doc_id": "d1", "text": "alpha"}) + "\n")
+        qa.write_text("\n")
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(ROOT / "scripts" / "check_dataset.py"),
+                "--qa",
+                str(qa),
+                "--corpus",
+                str(corpus),
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0
+        assert "dataset references ok" in result.stdout
+
+    def test_malformed_qa_row_fails_validation(self, tmp_path: Path):
+        corpus = tmp_path / "corpus.jsonl"
+        qa = tmp_path / "qa-malformed.jsonl"
+        corpus.write_text(json.dumps({"doc_id": "d1", "text": "alpha"}) + "\n")
+        qa.write_text('{"query_id": "q1"\n')
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(ROOT / "scripts" / "check_dataset.py"),
+                "--qa",
+                str(qa),
+                "--corpus",
+                str(corpus),
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode != 0
+        assert "JSONDecodeError" in (result.stderr + result.stdout)
