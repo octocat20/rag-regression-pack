@@ -79,6 +79,14 @@ class BM25Scorer:
         """Return top-k doc ids for a query."""
         return [doc_id for doc_id, _score in self.rank(query, top_k=top_k)]
 
+    def score_map(self, query: str) -> dict[str, float]:
+        """Return BM25 scores keyed by every document id in the corpus."""
+        query_terms = tokenize(query)
+        return {
+            doc_id: self.score_document(query_terms, doc_id)
+            for doc_id in self.doc_ids
+        }
+
 
 def load_corpus(path: Path) -> dict[str, str]:
     """Load doc_id to text mapping from a JSONL corpus file."""
