@@ -40,6 +40,28 @@ class TestBM25Scorer:
         ranked = scorer.rank_doc_ids("What is retrieval augmented generation?", top_k=3)
         assert ranked[0] in {"d1", "d3"}
 
+    def test_score_map_covers_all_doc_ids(self):
+        documents = {
+            "d1": "retrieval augmented generation grounds answers",
+            "d2": "unrelated cooking recipes and kitchen tools",
+        }
+        scorer = BM25Scorer(documents)
+        scores = scorer.score_map("retrieval augmented generation")
+        assert set(scores) == {"d1", "d2"}
+        assert all(isinstance(value, float) for value in scores.values())
+        assert scores["d1"] > scores["d2"]
+
+    def test_score_map_matches_rank_scores(self):
+        documents = {
+            "d2": "alpha beta gamma",
+            "d1": "alpha beta gamma delta",
+        }
+        scorer = BM25Scorer(documents)
+        query = "alpha beta"
+        scores = scorer.score_map(query)
+        ranked = scorer.rank(query)
+        assert {doc_id: score for doc_id, score in ranked} == scores
+
 
 class TestScoreCorpusScript:
     def test_writes_rankings_report(self):
