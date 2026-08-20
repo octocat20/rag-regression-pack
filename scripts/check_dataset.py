@@ -24,7 +24,7 @@ def load_jsonl(path: Path) -> list[dict]:
 
 
 def validate_dataset(corpus_path: Path = CORPUS, qa_path: Path = QA) -> None:
-    """Assert unique query ids and that all referenced doc ids exist in corpus."""
+    """Assert unique query ids, non-blank queries, and valid corpus references."""
     corpus_rows = load_jsonl(corpus_path)
     qa_rows = load_jsonl(qa_path)
 
@@ -36,6 +36,9 @@ def validate_dataset(corpus_path: Path = CORPUS, qa_path: Path = QA) -> None:
 
     for row in qa_rows:
         qid = row["query_id"]
+        query_text = row.get("query", "")
+        if not isinstance(query_text, str) or not query_text.strip():
+            raise AssertionError(f"{qid}: blank query text")
         for field in ("relevant_doc_ids", "expected_citations"):
             missing = sorted(set(row.get(field, [])) - corpus_ids)
             if missing:

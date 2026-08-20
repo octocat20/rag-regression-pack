@@ -53,6 +53,28 @@ class TestTinyDataset:
     def test_validate_dataset_passes(self):
         validate_dataset()
 
+    def test_validate_dataset_rejects_blank_query(self, tmp_path: Path):
+        corpus = tmp_path / "corpus.jsonl"
+        qa = tmp_path / "qa.jsonl"
+        corpus.write_text(json.dumps({"doc_id": "d1", "text": "alpha"}) + "\n")
+        qa.write_text(
+            json.dumps(
+                {
+                    "query_id": "q1",
+                    "query": "   ",
+                    "relevant_doc_ids": ["d1"],
+                    "expected_citations": ["d1"],
+                }
+            )
+            + "\n"
+        )
+        try:
+            validate_dataset(corpus_path=corpus, qa_path=qa)
+            raised = False
+        except AssertionError as exc:
+            raised = True
+            assert "blank query text" in str(exc)
+        assert raised
 
 
 class TestDatasetPathFlags:
@@ -141,6 +163,37 @@ class TestDatasetPathFlags:
         assert "unknown doc ids" in (result.stderr + result.stdout)
 
 class TestDatasetQaRobustness:
+    def test_blank_query_fails_validation(self, tmp_path: Path):
+        corpus = tmp_path / "corpus.jsonl"
+        qa = tmp_path / "qa-blank.jsonl"
+        corpus.write_text(json.dumps({"doc_id": "d1", "text": "alpha"}) + "\n")
+        qa.write_text(
+            json.dumps(
+                {
+                    "query_id": "q1",
+                    "query": "",
+                    "relevant_doc_ids": ["d1"],
+                    "expected_citations": ["d1"],
+                }
+            )
+            + "\n"
+        )
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(ROOT / "scripts" / "check_dataset.py"),
+                "--qa",
+                str(qa),
+                "--corpus",
+                str(corpus),
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode != 0
+        assert "blank query text" in (result.stderr + result.stdout)
+
     def test_empty_qa_file_is_valid(self, tmp_path: Path):
         corpus = tmp_path / "corpus.jsonl"
         qa = tmp_path / "qa-empty.jsonl"
